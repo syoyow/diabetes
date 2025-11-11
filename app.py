@@ -103,3 +103,52 @@ if uploaded_file:
 
 else:
     st.info("⬆️ Silakan upload file `diabetes.csv` terlebih dahulu.")
+
+# 🔟 Uji Prediksi dengan Data Baru
+st.subheader("🧪 Uji Prediksi dengan Data Baru")
+
+# Pilih model
+selected_model = st.selectbox("Pilih Model Naive Bayes:", list(models.keys()))
+
+# Ambil model terlatih
+model = models[selected_model]
+
+# Pastikan dataset sudah diupload
+if uploaded_file:
+    st.write("Masukkan nilai fitur pasien di bawah ini:")
+
+    # Ambil nama kolom fitur dari dataset
+    feature_inputs = {}
+    for col in X.columns:
+        # Ambil rentang nilai data untuk panduan
+        min_val = float(X[col].min())
+        max_val = float(X[col].max())
+        mean_val = float(X[col].mean())
+        feature_inputs[col] = st.number_input(f"{col}", min_value=min_val, max_value=max_val, value=mean_val)
+
+    # Tombol prediksi
+    if st.button("Prediksi"):
+        # Buat DataFrame 1 baris dari input
+        new_data = pd.DataFrame([feature_inputs])
+
+        # Jika model bukan Gaussian, pastikan nilai non-negatif
+        if selected_model != "GaussianNB":
+            new_data = new_data - X.min()
+
+        # Prediksi
+        pred = model.predict(new_data)[0]
+        prob = model.predict_proba(new_data)[0]
+
+        # Tampilkan hasil prediksi
+        st.markdown("### 🔍 Hasil Prediksi")
+        st.write(f"**Prediksi:** {'Positif Diabetes (1)' if pred == 1 else 'Negatif Diabetes (0)'}")
+        st.write(f"**Probabilitas:**")
+        st.write({f"Negatif (0)": round(prob[0], 3), f"Positif (1)": round(prob[1], 3)})
+
+        # Visualisasi probabilitas
+        fig, ax = plt.subplots()
+        sns.barplot(x=["Negatif (0)", "Positif (1)"], y=prob, palette="coolwarm", ax=ax)
+        ax.set_ylim(0, 1)
+        ax.set_ylabel("Probabilitas")
+        ax.set_title("Probabilitas Prediksi Kelas")
+        st.pyplot(fig)
